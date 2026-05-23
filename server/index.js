@@ -10,37 +10,25 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Auth middleware for /api and /integrations routes
 const authMiddleware = (req, res, next) => {
   const auth = req.headers.authorization;
-  if (!auth || !auth.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Authentication required' });
-  }
-  try {
-    req.user = jwt.verify(auth.split(' ')[1], JWT_SECRET);
-    next();
-  } catch {
-    res.status(401).json({ error: 'Invalid or expired token' });
-  }
+  if (!auth || !auth.startsWith('Bearer ')) return res.status(401).json({ error: 'Authentication required' });
+  try { req.user = jwt.verify(auth.split(' ')[1], JWT_SECRET); next(); }
+  catch { res.status(401).json({ error: 'Invalid or expired token' }); }
 };
 
 app.use('/api', authMiddleware);
 app.use('/integrations', authMiddleware);
+app.use('/agent', authMiddleware);
 
-// Routes
 app.use('/auth', require('./auth'));
 app.use('/api', require('./routes'));
 app.use('/integrations', require('./integrations'));
+app.use('/agent', require('./agent'));
 
-// Serve static files
 app.use(express.static(path.join(__dirname, '../public')));
-
-// Fallback
-app.get('/{*path}', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/index.html'));
-});
+app.get('/{*path}', (req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
 
 app.listen(PORT, () => {
-  console.log(`\n  ✦ Polsia server running on port ${PORT}`);
-  console.log(`  ✦ Demo login: jane@polsia.ai / demo1234\n`);
+  console.log(`\n  ✦ Polsia running on port ${PORT}\n`);
 });
