@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Polsia — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #080808; --surface: #0f0f0f; --card: #111; --card2: #141414;
+  --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.13);
+  --accent: #c8ff00; --accent2: #00ffc2; --accent3: #ff6b35;
+  --text: #f0f0f0; --muted: #555; --muted2: #888;
+  --error: #ff5555; --success: #c8ff00;
+  --fd: 'Syne', sans-serif; --fm: 'DM Mono', monospace;
+  --sidebar: 220px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--text); font-family: var(--fm); font-weight: 300; font-size: 13px; display: flex; overflow: hidden; }
+
+/* SIDEBAR */
+.sidebar { width: var(--sidebar); flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; height: 100vh; position: fixed; left: 0; top: 0; }
+.sidebar-logo { padding: 1.5rem 1.4rem; border-bottom: 1px solid var(--border); font-family: var(--fd); font-size: 1.15rem; font-weight: 800; letter-spacing: -0.02em; }
+.sidebar-logo span { color: var(--accent); }
+.sidebar-logo small { display: block; font-size: 0.55rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted2); margin-top: 2px; font-family: var(--fm); font-weight: 300; }
+.sidebar-section { padding: 1.2rem 1rem 0.4rem; font-size: 0.55rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
+.nav-item { display: flex; align-items: center; gap: 0.7rem; padding: 0.55rem 1rem; margin: 0 0.4rem; border-radius: 4px; color: var(--muted2); font-size: 0.75rem; cursor: pointer; transition: background 0.15s, color 0.15s; text-decoration: none; }
+.nav-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+.nav-item.active { background: rgba(200,255,0,0.08); color: var(--accent); }
+.sidebar-bottom { margin-top: auto; border-top: 1px solid var(--border); padding: 1rem; }
+.back-btn { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0.8rem; color: var(--muted2); font-size: 0.72rem; cursor: pointer; border: 1px solid var(--border); transition: all 0.2s; text-decoration: none; }
+.back-btn:hover { border-color: var(--border2); color: var(--text); }
+
+/* MAIN */
+.main { margin-left: var(--sidebar); flex: 1; height: 100vh; overflow-y: auto; }
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: 1.2rem 2rem; border-bottom: 1px solid var(--border); background: var(--bg); position: sticky; top: 0; z-index: 40; }
+.topbar-title { font-family: var(--fd); font-size: 1.1rem; font-weight: 700; letter-spacing: -0.01em; }
+.topbar-sub { font-size: 0.65rem; color: var(--muted2); margin-top: 2px; }
+.sync-btn { background: var(--accent); color: #000; border: none; padding: 0.55rem 1.2rem; font-family: var(--fm); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; transition: opacity 0.2s; display: flex; align-items: center; gap: 0.5rem; }
+.sync-btn:hover:not(:disabled) { opacity: 0.85; }
+.sync-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.spinner-sm { width: 10px; height: 10px; border: 2px solid rgba(0,0,0,0.3); border-top-color: #000; border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+.sync-btn.syncing .spinner-sm { display: block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.content { padding: 2rem; }
+
+/* SECTION */
+.section { margin-bottom: 2rem; }
+.section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+.section-title { font-family: var(--fd); font-size: 0.95rem; font-weight: 700; letter-spacing: -0.01em; }
+.section-sub { font-size: 0.65rem; color: var(--muted2); margin-top: 2px; }
+
+/* CARD */
+.card { background: var(--card); border: 1px solid var(--border); }
+.card-body { padding: 1.4rem; }
+
+/* INTEGRATION CARDS */
+.int-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.int-card { background: var(--card); border: 1px solid var(--border); padding: 1.4rem; transition: border-color 0.2s; }
+.int-card.connected { border-color: rgba(200,255,0,0.2); }
+.int-card.error-state { border-color: rgba(255,85,85,0.2); }
+.int-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+.int-icon { font-size: 1.4rem; }
+.int-badge { font-size: 0.58rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.2rem 0.5rem; border-radius: 2px; }
+.int-badge.connected { background: rgba(200,255,0,0.1); color: var(--accent); }
+.int-badge.disconnected { background: rgba(255,255,255,0.05); color: var(--muted2); }
+.int-name { font-family: var(--fd); font-size: 0.95rem; font-weight: 700; margin-bottom: 0.3rem; }
+.int-desc { font-size: 0.7rem; color: var(--muted2); line-height: 1.6; margin-bottom: 1.2rem; }
+.int-result { font-size: 0.68rem; color: var(--accent2); margin-bottom: 0.8rem; display: none; }
+.int-result.error { color: var(--error); }
+.int-result.show { display: block; }
+
+/* FIELDS */
+.field-group { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.8rem; }
+.field-label { font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted2); }
+.field-input { background: var(--card2); border: 1px solid var(--border); color: var(--text); font-family: var(--fm); font-size: 0.78rem; padding: 0.6rem 0.8rem; outline: none; transition: border-color 0.2s; width: 100%; }
+.field-input:focus { border-color: var(--accent); }
+.field-input::placeholder { color: var(--muted); }
+.field-hint { font-size: 0.58rem; color: var(--muted); }
+.field-btn { background: transparent; border: 1px solid var(--border); color: var(--muted2); font-family: var(--fm); font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.5rem 1rem; cursor: pointer; transition: all 0.2s; width: 100%; }
+.field-btn:hover { border-color: var(--border2); color: var(--text); }
+.field-btn.primary { background: var(--accent); color: #000; border-color: var(--accent); }
+.field-btn.primary:hover { opacity: 0.85; }
+
+/* MANUAL KPI GRID */
+.kpi-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); }
+.kpi-cell { background: var(--card); padding: 1.2rem; }
+.kpi-cell-label { font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted2); margin-bottom: 0.6rem; }
+.kpi-current { font-family: var(--fd); font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 0.8rem; }
+
+/* REVENUE TABLE */
+.rev-table { width: 100%; border-collapse: collapse; }
+.rev-table th { font-size: 0.58rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted2); text-align: left; padding: 0.6rem 1rem; border-bottom: 1px solid var(--border); }
+.rev-table td { padding: 0.65rem 1rem; border-bottom: 1px solid var(--border); font-size: 0.75rem; color: var(--text); }
+.rev-table tr:last-child td { border-bottom: none; }
+.rev-table tr:hover td { background: var(--card2); }
+.rev-edit { background: transparent; border: none; color: var(--muted2); font-family: var(--fm); font-size: 0.7rem; cursor: pointer; padding: 0.2rem 0.5rem; border: 1px solid transparent; transition: all 0.2s; }
+.rev-edit:hover { border-color: var(--border); color: var(--text); }
+
+/* TOAST */
+.toast { position: fixed; bottom: 2rem; right: 2rem; background: var(--card2); border: 1px solid var(--border2); padding: 0.8rem 1.2rem; font-size: 0.75rem; z-index: 999; transform: translateY(100px); opacity: 0; transition: all 0.3s ease; pointer-events: none; }
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.success { border-color: rgba(200,255,0,0.3); color: var(--accent); }
+.toast.error { border-color: rgba(255,85,85,0.3); color: var(--error); }
+
+/* ACTIVITY LOG */
+.log-item { display: flex; gap: 1rem; padding: 0.8rem 1.4rem; border-bottom: 1px solid var(--border); align-items: flex-start; }
+.log-item:last-child { border-bottom: none; }
+.log-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.log-dot.green { background: var(--accent); }
+.log-dot.teal { background: var(--accent2); }
+.log-dot.orange { background: var(--accent3); }
+.log-dot.gray { background: var(--muted); }
+.log-text { flex: 1; font-size: 0.73rem; line-height: 1.5; }
+.log-text strong { color: var(--accent); font-weight: 400; }
+.log-time { font-size: 0.6rem; color: var(--muted); white-space: nowrap; }
+
+.main::-webkit-scrollbar { width: 3px; }
+.main::-webkit-scrollbar-thumb { background: var(--border2); }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">Pol<span>sia</span><small>Admin Panel</small></div>
+  <div class="sidebar-section">Admin</div>
+  <a class="nav-item active" href="admin.html">⊞ KPI Overrides</a>
+  <a class="nav-item" href="admin.html#integrations">⌥ Integrations</a>
+  <a class="nav-item" href="admin.html#revenue">↗ Revenue Data</a>
+  <a class="nav-item" href="admin.html#activity">◎ Activity Log</a>
+  <div class="sidebar-bottom">
+    <a class="back-btn" href="dashboard.html">← Back to dashboard</a>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">Admin Panel</div>
+      <div class="topbar-sub">Manage data sources and manual overrides</div>
+    </div>
+    <button class="sync-btn" id="syncBtn" onclick="syncAll()">
+      <div class="spinner-sm"></div>
+      ↺ Sync all integrations
+    </button>
+  </div>
+
+  <div class="content">
+
+    <!-- INTEGRATIONS -->
+    <div class="section" id="integrations">
+      <div class="section-head">
+        <div>
+          <div class="section-title">Integrations</div>
+          <div class="section-sub">Set your API keys in Render → Environment Variables, then click Sync</div>
+        </div>
+      </div>
+      <div class="int-grid">
+
+        <!-- STRIPE -->
+        <div class="int-card" id="stripeCard">
+          <div class="int-header">
+            <span class="int-icon">💳</span>
+            <span class="int-badge disconnected" id="stripeBadge">Not connected</span>
+          </div>
+          <div class="int-name">Stripe</div>
+          <div class="int-desc">Pulls live MRR from active subscriptions and 30-day revenue from charges.</div>
+          <div class="int-result" id="stripeResult"></div>
+          <div class="field-group">
+            <div class="field-label">Render env var name</div>
+            <div class="field-input" style="cursor:default;opacity:0.6">STRIPE_SECRET_KEY</div>
+          </div>
+          <div class="field-hint">Add your Stripe secret key (sk_live_...) as STRIPE_SECRET_KEY in Render</div>
+        </div>
+
+        <!-- GITHUB -->
+        <div class="int-card" id="githubCard">
+          <div class="int-header">
+            <span class="int-icon">⚡</span>
+            <span class="int-badge disconnected" id="githubBadge">Not connected</span>
+          </div>
+          <div class="int-name">GitHub</div>
+          <div class="int-desc">Tracks merged PRs and commits today as deploy count. Logs activity from merged PRs.</div>
+          <div class="int-result" id="githubResult"></div>
+          <div class="field-group">
+            <div class="field-label">Render env var names</div>
+            <div class="field-input" style="cursor:default;opacity:0.6">GITHUB_TOKEN + GITHUB_REPO</div>
+          </div>
+          <div class="field-hint">GITHUB_REPO format: <code>fpsvic/polsia-hq</code></div>
+        </div>
+
+        <!-- GOOGLE ANALYTICS -->
+        <div class="int-card" id="gaCard">
+          <div class="int-header">
+            <span class="int-icon">📊</span>
+            <span class="int-badge disconnected" id="gaBadge">Not connected</span>
+          </div>
+          <div class="int-name">Google Analytics</div>
+          <div class="int-desc">Pulls weekly active users from GA4 Data API to populate the Active Users KPI.</div>
+          <div class="int-result" id="gaResult"></div>
+          <div class="field-group">
+            <div class="field-label">Render env var names</div>
+            <div class="field-input" style="cursor:default;opacity:0.6">GA_PROPERTY_ID + GA_API_SECRET</div>
+          </div>
+          <div class="field-hint">GA_PROPERTY_ID: numeric ID from GA4 Admin → Property Settings</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- MANUAL KPI OVERRIDES -->
+    <div class="section">
+      <div class="section-head">
+        <div>
+          <div class="section-title">Manual KPI Overrides</div>
+          <div class="section-sub">Set values directly — useful before integrations are connected</div>
+        </div>
+      </div>
+      <div class="kpi-grid" id="kpiGrid">
+        <!-- Populated by JS -->
+      </div>
+      <div style="margin-top:1rem">
+        <button class="field-btn primary" onclick="saveManualKpis()">Save all overrides →</button>
+      </div>
+    </div>
+
+    <!-- REVENUE DATA -->
+    <div class="section" id="revenue">
+      <div class="section-head">
+        <div>
+          <div class="section-title">Revenue History</div>
+          <div class="section-sub">30-day data powering the dashboard chart — click any value to edit</div>
+        </div>
+        <div style="display:flex;gap:0.8rem;align-items:center">
+          <input class="field-input" id="newRevDate" type="date" style="width:140px" />
+          <input class="field-input" id="newRevAmount" type="number" placeholder="Amount ($)" style="width:140px" />
+          <button class="field-btn primary" style="width:auto;padding:0.5rem 1rem" onclick="addRevenue()">Add entry</button>
+        </div>
+      </div>
+      <div class="card">
+        <table class="rev-table" id="revTable">
+          <thead><tr><th>Date</th><th>Revenue ($)</th><th>Action</th></tr></thead>
+          <tbody id="revBody"><!-- JS --></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ACTIVITY LOG -->
+    <div class="section" id="activity">
+      <div class="section-head">
+        <div>
+          <div class="section-title">Activity Log</div>
+          <div class="section-sub">Full feed of agent actions shown on the dashboard</div>
+        </div>
+        <div style="display:flex;gap:0.8rem;align-items:center">
+          <select class="field-input" id="newLogAgent" style="width:130px">
+            <option>Engineering</option><option>Strategy</option><option>Growth</option>
+          </select>
+          <input class="field-input" id="newLogMsg" type="text" placeholder="Activity message..." style="width:260px"/>
+          <button class="field-btn primary" style="width:auto;padding:0.5rem 1rem" onclick="addActivity()">Log it</button>
+        </div>
+      </div>
+      <div class="card" id="activityLog"><!-- JS --></div>
+    </div>
+
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = window.location.origin + '/api';
+const INT_API = window.location.origin + '/integrations';
+const AUTH_API = window.location.origin + '/auth';
+
+// ── AUTH ──
+const token = localStorage.getItem('polsia_token');
+if (!token) window.location.href = '/login.html';
+
+function h(p, opts = {}) {
+  return fetch(p, { ...opts, headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', ...(opts.headers || {}) } });
+}
+
+// ── TOAST ──
+function toast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast ${type} show`;
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ── LOAD INTEGRATION STATUS ──
+async function loadStatus() {
+  try {
+    const r = await h(`${INT_API}/status`);
+    const s = await r.json();
+    setIntStatus('stripe', s.stripe, 'stripeCard', 'stripeBadge');
+    setIntStatus('github', s.github, 'githubCard', 'githubBadge');
+    setIntStatus('ga', s.analytics, 'gaCard', 'gaBadge');
+  } catch {}
+}
+
+function setIntStatus(name, connected, cardId, badgeId) {
+  const badge = document.getElementById(badgeId);
+  const card = document.getElementById(cardId);
+  if (connected) {
+    badge.textContent = 'Connected';
+    badge.className = 'int-badge connected';
+    card.classList.add('connected');
+  }
+}
+
+// ── SYNC ALL ──
+async function syncAll() {
+  const btn = document.getElementById('syncBtn');
+  btn.classList.add('syncing');
+  btn.disabled = true;
+  try {
+    const r = await h(`${INT_API}/sync`, { method: 'POST' });
+    const data = await r.json();
+    const { results } = data;
+
+    // Show results per integration
+    showIntResult('stripe', results.stripe);
+    showIntResult('github', results.github);
+    showIntResult('ga', results.analytics);
+
+    const ok = Object.values(results).filter(r => r.ok).length;
+    toast(`Sync complete — ${ok} integration${ok !== 1 ? 's' : ''} updated`);
+    loadKpis();
+    loadRevenue();
+  } catch (e) {
+    toast('Sync failed: ' + e.message, 'error');
+  } finally {
+    btn.classList.remove('syncing');
+    btn.disabled = false;
+  }
+}
+
+function showIntResult(name, result) {
+  const el = document.getElementById(`${name}Result`);
+  if (!el || !result) return;
+  el.classList.add('show');
+  if (result.ok) {
+    el.classList.remove('error');
+    if (name === 'stripe') el.textContent = `✓ MRR: $${result.mrr?.toLocaleString()} · ${result.days} days synced`;
+    if (name === 'github') el.textContent = `✓ ${result.merged_prs} PRs merged · ${result.commits_today} commits today`;
+    if (name === 'ga') el.textContent = `✓ ${result.active_users?.toLocaleString()} active users (7d)`;
+  } else {
+    el.classList.add('error');
+    el.textContent = '✗ ' + (result.error || 'Failed');
+  }
+}
+
+// ── KPI OVERRIDES ──
+let currentKpis = {};
+async function loadKpis() {
+  const r = await h(`${API}/kpis`);
+  const kpi = await r.json();
+  currentKpis = kpi;
+  renderKpiGrid(kpi);
+}
+
+function renderKpiGrid(kpi) {
+  const fields = [
+    { key: 'mrr', label: 'MRR ($)', prefix: '$', fmt: v => Number(v).toLocaleString() },
+    { key: 'active_users', label: 'Active Users', prefix: '', fmt: v => Number(v).toLocaleString() },
+    { key: 'deploys_today', label: 'Deploys Today', prefix: '', fmt: v => v },
+    { key: 'tasks_completed', label: 'Tasks Completed', prefix: '', fmt: v => v },
+  ];
+  document.getElementById('kpiGrid').innerHTML = fields.map(f => `
+    <div class="kpi-cell">
+      <div class="kpi-cell-label">${f.label}</div>
+      <div class="kpi-current">${f.prefix}${kpi[f.key] !== undefined ? f.fmt(kpi[f.key]) : '—'}</div>
+      <div class="field-group">
+        <input class="field-input" id="kpi_${f.key}" type="number" placeholder="New value" value="${kpi[f.key] || ''}"/>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function saveManualKpis() {
+  const body = {};
+  ['mrr', 'active_users', 'deploys_today', 'tasks_completed'].forEach(k => {
+    const el = document.getElementById(`kpi_${k}`);
+    if (el && el.value !== '') body[k] = Number(el.value);
+  });
+  if (!Object.keys(body).length) return toast('No values to save', 'error');
+  const r = await h(`${INT_API}/manual`, { method: 'POST', body: JSON.stringify(body) });
+  if (r.ok) { toast('KPIs updated ✓'); loadKpis(); }
+  else toast('Failed to save', 'error');
+}
+
+// ── REVENUE ──
+async function loadRevenue() {
+  const r = await h(`${API}/revenue`);
+  const data = await r.json();
+  const tbody = document.getElementById('revBody');
+  tbody.innerHTML = [...data].reverse().map(row => `
+    <tr>
+      <td>${row.date}</td>
+      <td id="rev_val_${row.date}">$${Number(row.amount).toLocaleString()}</td>
+      <td><button class="rev-edit" onclick="editRevenue('${row.date}', ${row.amount})">Edit</button></td>
+    </tr>
+  `).join('');
+}
+
+async function addRevenue() {
+  const date = document.getElementById('newRevDate').value;
+  const amount = document.getElementById('newRevAmount').value;
+  if (!date || !amount) return toast('Date and amount required', 'error');
+  const r = await h(`${INT_API}/revenue/manual`, { method: 'POST', body: JSON.stringify({ date, amount: Number(amount) }) });
+  if (r.ok) { toast('Revenue entry added ✓'); loadRevenue(); document.getElementById('newRevAmount').value = ''; }
+  else toast('Failed', 'error');
+}
+
+async function editRevenue(date, current) {
+  const val = prompt(`Edit revenue for ${date}:`, current);
+  if (val === null || val === '') return;
+  const r = await h(`${INT_API}/revenue/manual`, { method: 'POST', body: JSON.stringify({ date, amount: Number(val) }) });
+  if (r.ok) { toast('Updated ✓'); loadRevenue(); }
+}
+
+// ── ACTIVITY ──
+async function loadActivity() {
+  const r = await h(`${API}/activity`);
+  const data = await r.json();
+  const colors = { Engineering: 'teal', Strategy: 'green', Growth: 'orange' };
+  document.getElementById('activityLog').innerHTML = data.map(item => `
+    <div class="log-item">
+      <div class="log-dot ${colors[item.agent] || 'gray'}"></div>
+      <div class="log-text"><strong>${item.agent}</strong> ${item.message}</div>
+      <div class="log-time">${timeAgo(item.created_at)}</div>
+    </div>
+  `).join('') || '<div style="padding:1.5rem;color:var(--muted);font-size:0.75rem">No activity yet</div>';
+}
+
+async function addActivity() {
+  const agent = document.getElementById('newLogAgent').value;
+  const message = document.getElementById('newLogMsg').value.trim();
+  if (!message) return toast('Message required', 'error');
+  const r = await h(`${API}/activity`, { method: 'POST', body: JSON.stringify({ agent, message, type: 'info' }) });
+  if (r.ok) { toast('Activity logged ✓'); document.getElementById('newLogMsg').value = ''; loadActivity(); }
+}
+
+function timeAgo(dateStr) {
+  const diff = (Date.now() - new Date(dateStr + 'Z').getTime()) / 1000;
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  return Math.floor(diff / 86400) + 'd ago';
+}
+
+// Set today's date as default for revenue input
+document.getElementById('newRevDate').value = new Date().toISOString().split('T')[0];
+
+// Init
+loadStatus();
+loadKpis();
+loadRevenue();
+loadActivity();
+</script>
+</body>
+</html>
