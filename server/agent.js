@@ -137,6 +137,7 @@ router.post('/engineering/run', async (req, res) => {
       return res.status(400).json({ error: 'GITHUB_TOKEN and GITHUB_REPO must be set to run the Engineering Agent' });
     }
     db.run(`CREATE TABLE IF NOT EXISTS agent_runs (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, agent TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'running', result TEXT, started_at TEXT NOT NULL, completed_at TEXT)`);
+    db.run(`CREATE TABLE IF NOT EXISTS onboarding (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL UNIQUE, company_name TEXT, product_desc TEXT, target_market TEXT, competitors TEXT, goals TEXT, stack TEXT, github_repo TEXT, updated_at TEXT)`);
     db.run(`CREATE TABLE IF NOT EXISTS engineering_analysis (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, title TEXT NOT NULL, description TEXT NOT NULL, type TEXT NOT NULL DEFAULT 'task', priority INTEGER NOT NULL DEFAULT 1, effort TEXT NOT NULL DEFAULT 'medium', reasoning TEXT, status TEXT DEFAULT 'open', created_at TEXT NOT NULL)`);
 
     const ob = db.exec('SELECT * FROM onboarding WHERE user_id = ?', [req.user.id]);
@@ -267,6 +268,7 @@ Valid effort: small (under 2h), medium (half-day), large (1-2 days)`;
 router.get('/engineering/analysis', async (req, res) => {
   try {
     const db = await getDb();
+    db.run(`CREATE TABLE IF NOT EXISTS onboarding (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL UNIQUE, company_name TEXT, product_desc TEXT, target_market TEXT, competitors TEXT, goals TEXT, stack TEXT, github_repo TEXT, updated_at TEXT)`);
     db.run(`CREATE TABLE IF NOT EXISTS engineering_analysis (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, title TEXT NOT NULL, description TEXT NOT NULL, type TEXT NOT NULL DEFAULT 'task', priority INTEGER NOT NULL DEFAULT 1, effort TEXT NOT NULL DEFAULT 'medium', reasoning TEXT, status TEXT DEFAULT 'open', created_at TEXT NOT NULL)`);
     const r = db.exec('SELECT * FROM engineering_analysis WHERE user_id = ? ORDER BY priority ASC', [req.user.id]);
     if (!r.length) return res.json([]);
