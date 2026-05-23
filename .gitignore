@@ -1,0 +1,5 @@
+node_modules/
+polsia.db.json
+.env
+*.log
+.DS_Store
