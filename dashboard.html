@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Polsia — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #080808;
+  --surface: #0f0f0f;
+  --card: #111111;
+  --card2: #141414;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --accent: #c8ff00;
+  --accent2: #00ffc2;
+  --accent3: #ff6b35;
+  --text: #f0f0f0;
+  --muted: #555;
+  --muted2: #888;
+  --font-d: 'Syne', sans-serif;
+  --font-m: 'DM Mono', monospace;
+  --sidebar: 220px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-m);
+  font-weight: 300;
+  font-size: 13px;
+  line-height: 1.5;
+  display: flex;
+  overflow: hidden;
+  cursor: default;
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: var(--sidebar);
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: fixed;
+  left: 0; top: 0;
+  z-index: 50;
+}
+.sidebar-logo {
+  padding: 1.5rem 1.4rem;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-d);
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.sidebar-logo span { color: var(--accent); }
+
+.sidebar-section {
+  padding: 1.2rem 1rem 0.4rem;
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 1rem;
+  margin: 0 0.4rem;
+  border-radius: 4px;
+  color: var(--muted2);
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  user-select: none;
+}
+.nav-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+.nav-item.active { background: rgba(200,255,0,0.08); color: var(--accent); }
+.nav-icon { font-size: 0.95rem; width: 18px; text-align: center; flex-shrink: 0; }
+.nav-badge {
+  margin-left: auto;
+  background: var(--accent);
+  color: #000;
+  font-size: 0.55rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+
+.sidebar-bottom {
+  margin-top: auto;
+  border-top: 1px solid var(--border);
+  padding: 1rem;
+}
+.user-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.user-row:hover { background: rgba(255,255,255,0.04); }
+.avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.65rem; font-weight: 700; color: #000;
+  flex-shrink: 0;
+}
+.user-info { flex: 1; min-width: 0; }
+.user-name { font-size: 0.72rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-plan { font-size: 0.6rem; color: var(--muted2); }
+
+/* ── MAIN ── */
+.main {
+  margin-left: var(--sidebar);
+  flex: 1;
+  height: 100vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  flex-shrink: 0;
+}
+.topbar-left { display: flex; flex-direction: column; }
+.topbar-title { font-family: var(--font-d); font-size: 1.15rem; font-weight: 700; letter-spacing: -0.01em; }
+.topbar-sub { font-size: 0.65rem; color: var(--muted2); margin-top: 1px; }
+.topbar-right { display: flex; align-items: center; gap: 1rem; }
+
+.status-pill {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.35rem 0.8rem;
+  border: 1px solid rgba(200,255,0,0.2);
+  background: rgba(200,255,0,0.05);
+  border-radius: 2px;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.pulse {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 1.8s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+.topbar-btn {
+  padding: 0.4rem 1rem;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  font-family: var(--font-m);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.topbar-btn:hover { opacity: 0.85; }
+
+/* ── CONTENT ── */
+.content { padding: 2rem; flex: 1; }
+
+/* ── KPI ROW ── */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+}
+.kpi {
+  background: var(--card);
+  padding: 1.4rem 1.6rem;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.2s;
+}
+.kpi:hover { background: var(--card2); }
+.kpi::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 2px; height: 0;
+  background: var(--accent);
+  transition: height 0.3s;
+}
+.kpi:hover::after { height: 100%; }
+.kpi-label { font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted2); margin-bottom: 0.6rem; }
+.kpi-value { font-family: var(--font-d); font-size: 1.9rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+.kpi-delta { margin-top: 0.4rem; font-size: 0.65rem; }
+.kpi-delta.up { color: var(--accent); }
+.kpi-delta.down { color: var(--accent3); }
+.kpi-delta.neutral { color: var(--muted2); }
+
+/* ── GRID ── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+.grid-3 { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+
+/* ── CARD ── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 1.4rem;
+  border-bottom: 1px solid var(--border);
+}
+.card-head-title { font-family: var(--font-d); font-size: 0.85rem; font-weight: 700; letter-spacing: -0.01em; }
+.card-head-action { font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted2); cursor: pointer; transition: color 0.2s; }
+.card-head-action:hover { color: var(--accent); }
+.card-body { padding: 1.2rem 1.4rem; }
+
+/* ── AGENT STATUS ── */
+.agent-list { display: flex; flex-direction: column; gap: 1px; }
+.agent-row {
+  display: grid;
+  grid-template-columns: 36px 1fr auto auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 1.4rem;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.agent-row:last-child { border-bottom: none; }
+.agent-row:hover { background: var(--card2); }
+.agent-icon {
+  width: 32px; height: 32px;
+  border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+.agent-icon.strategy { background: rgba(200,255,0,0.1); }
+.agent-icon.engineering { background: rgba(0,255,194,0.1); }
+.agent-icon.growth { background: rgba(255,107,53,0.1); }
+.agent-name { font-size: 0.78rem; font-weight: 400; color: var(--text); }
+.agent-task { font-size: 0.65rem; color: var(--muted2); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
+.agent-status {
+  font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 0.25rem 0.6rem; border-radius: 2px;
+}
+.agent-status.running { background: rgba(200,255,0,0.1); color: var(--accent); }
+.agent-status.idle { background: rgba(255,255,255,0.05); color: var(--muted2); }
+.agent-status.error { background: rgba(255,107,53,0.1); color: var(--accent3); }
+.agent-uptime { font-size: 0.65rem; color: var(--muted); text-align: right; min-width: 50px; }
+
+/* ── CHART (SVG sparkline) ── */
+.chart-wrap { padding: 1.2rem 1.4rem 0.8rem; position: relative; }
+.chart-labels {
+  display: flex; justify-content: space-between;
+  padding: 0 1.4rem 1rem;
+  font-size: 0.6rem; color: var(--muted);
+}
+.sparkline-container {
+  position: relative;
+  height: 120px;
+  overflow: visible;
+}
+.sparkline-container svg { width: 100%; height: 100%; overflow: visible; }
+.chart-grid-line {
+  stroke: var(--border);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+.spark-area { fill: url(#areaGrad); }
+.spark-line { fill: none; stroke: var(--accent); stroke-width: 1.5; }
+.spark-dot {
+  fill: var(--accent);
+  r: 3;
+  transition: r 0.15s;
+}
+.chart-tooltip {
+  position: absolute;
+  background: var(--card2);
+  border: 1px solid var(--border2);
+  padding: 0.4rem 0.7rem;
+  font-size: 0.65rem;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+  z-index: 10;
+}
+
+/* ── ACTIVITY FEED ── */
+.feed { display: flex; flex-direction: column; }
+.feed-item {
+  display: flex;
+  gap: 0.9rem;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--border);
+  align-items: flex-start;
+}
+.feed-item:last-child { border-bottom: none; }
+.feed-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+.feed-dot.green { background: var(--accent); }
+.feed-dot.teal { background: var(--accent2); }
+.feed-dot.orange { background: var(--accent3); }
+.feed-dot.gray { background: var(--muted); }
+.feed-body { flex: 1; }
+.feed-text { font-size: 0.75rem; color: var(--text); line-height: 1.5; }
+.feed-text strong { color: var(--accent); font-weight: 400; }
+.feed-time { font-size: 0.6rem; color: var(--muted); margin-top: 2px; }
+
+/* ── TASK BOARD ── */
+.task-cols { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px; background: var(--border); }
+.task-col { background: var(--card); padding: 1rem; }
+.task-col-head { font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted2); margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem; }
+.task-col-head span { background: rgba(255,255,255,0.07); padding: 1px 6px; border-radius: 2px; font-size: 0.55rem; }
+.task-item {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  padding: 0.75rem;
+  margin-bottom: 0.6rem;
+  font-size: 0.72rem;
+  color: var(--text);
+  line-height: 1.45;
+  transition: border-color 0.2s;
+  cursor: default;
+}
+.task-item:hover { border-color: var(--border2); }
+.task-meta { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
+.task-tag { font-size: 0.55rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 1px 5px; border-radius: 2px; }
+.task-tag.strategy { background: rgba(200,255,0,0.1); color: var(--accent); }
+.task-tag.eng { background: rgba(0,255,194,0.1); color: var(--accent2); }
+.task-tag.growth { background: rgba(255,107,53,0.1); color: var(--accent3); }
+.task-time { font-size: 0.58rem; color: var(--muted); margin-left: auto; }
+
+/* ── MINI STATS ── */
+.mini-stats { display: flex; flex-direction: column; gap: 1px; }
+.mini-stat {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.9rem 1.4rem;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.mini-stat:last-child { border-bottom: none; }
+.mini-stat:hover { background: var(--card2); }
+.mini-stat-label { font-size: 0.7rem; color: var(--muted2); }
+.mini-stat-value { font-family: var(--font-d); font-size: 1rem; font-weight: 700; }
+.mini-stat-bar { height: 2px; background: var(--border); margin-top: 0.4rem; overflow: hidden; border-radius: 1px; }
+.mini-stat-fill { height: 100%; background: var(--accent); border-radius: 1px; }
+
+/* ── PROGRESS RINGS ── */
+.rings-row { display: flex; gap: 1.5rem; align-items: center; justify-content: space-around; padding: 1.5rem; }
+.ring-item { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; }
+.ring-label { font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted2); }
+.ring-value { font-family: var(--font-d); font-size: 0.9rem; font-weight: 700; }
+
+/* ── SCROLLBAR ── */
+.main::-webkit-scrollbar { width: 3px; }
+.main::-webkit-scrollbar-track { background: transparent; }
+.main::-webkit-scrollbar-thumb { background: var(--border2); }
+
+/* ── ANIMATIONS ── */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.card { animation: fadeIn 0.4s ease forwards; }
+.kpi { animation: fadeIn 0.4s ease forwards; }
+</style>
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-WQGSDG87MT"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-WQGSDG87MT');
+</script>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">Pol<span>sia</span></div>
+
+  <div class="sidebar-section">Overview</div>
+  <div class="nav-item active"><span class="nav-icon">◈</span> Dashboard</div>
+  <a href="strategy.html" class="nav-item" style="text-decoration:none"><span class="nav-icon">◎</span> Agents <span class="nav-badge">3</span></a>
+  <div class="nav-item"><span class="nav-icon">⊞</span> Tasks</div>
+  <div class="nav-item"><span class="nav-icon">↗</span> Reports</div>
+
+  <div class="sidebar-section">Integrations</div>
+  <div class="nav-item"><span class="nav-icon">⌥</span> GitHub</div>
+  <div class="nav-item"><span class="nav-icon">◇</span> Analytics</div>
+  <div class="nav-item"><span class="nav-icon">✦</span> Marketing</div>
+
+  <div class="sidebar-section">Settings</div>
+  <div class="nav-item"><span class="nav-icon">⊙</span> Goals</div>
+  <div class="nav-item"><span class="nav-icon">⊛</span> Settings</div>
+  <a href="admin.html" class="nav-item" style="text-decoration:none"><span class="nav-icon">⊹</span> Admin</a>
+
+  <div class="sidebar-bottom">
+    <div class="user-row">
+      <div class="avatar">JD</div>
+      <div class="user-info">
+        <div class="user-name">Jane Doe</div>
+        <div class="user-plan">Studio Plan</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-title">Good morning, Jane.</div>
+      <div class="topbar-sub">Friday, May 22 · Your agents worked 7h 42m overnight</div>
+    </div>
+    <div class="topbar-right">
+      <div class="status-pill"><div class="pulse"></div> All agents running</div>
+      <button class="topbar-btn">+ New goal</button>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- KPI ROW -->
+    <div class="kpi-row">
+      <div class="kpi">
+        <div class="kpi-label">MRR</div>
+        <div class="kpi-value">$18,340</div>
+        <div class="kpi-delta up">↑ 12.4% vs last month</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Tasks completed</div>
+        <div class="kpi-value">247</div>
+        <div class="kpi-delta up">↑ 34 overnight</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Active users</div>
+        <div class="kpi-value">1,842</div>
+        <div class="kpi-delta up">↑ 8.1% this week</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Deploys today</div>
+        <div class="kpi-value">6</div>
+        <div class="kpi-delta neutral">0 failures · 100% uptime</div>
+      </div>
+    </div>
+
+    <!-- AGENTS + CHART -->
+    <div class="grid-3">
+
+      <!-- REVENUE CHART -->
+      <div class="card">
+        <div class="card-head">
+          <span class="card-head-title">Revenue · 30 days</span>
+          <span class="card-head-action">View full →</span>
+        </div>
+        <div class="chart-wrap">
+          <div class="sparkline-container" id="chartWrap">
+            <svg id="sparkSvg" viewBox="0 0 600 120" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#c8ff00" stop-opacity="0.15"/>
+                  <stop offset="100%" stop-color="#c8ff00" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <!-- grid lines -->
+              <line class="chart-grid-line" x1="0" y1="30" x2="600" y2="30"/>
+              <line class="chart-grid-line" x1="0" y1="60" x2="600" y2="60"/>
+              <line class="chart-grid-line" x1="0" y1="90" x2="600" y2="90"/>
+              <!-- area + line drawn by JS -->
+              <path id="sparkArea" class="spark-area"/>
+              <path id="sparkLine" class="spark-line"/>
+              <g id="sparkDots"></g>
+            </svg>
+            <div class="chart-tooltip" id="tooltip"></div>
+          </div>
+        </div>
+        <div class="chart-labels" id="chartLabels"></div>
+      </div>
+
+      <!-- AGENT STATUS (sidebar card) -->
+      <div class="card">
+        <div class="card-head">
+          <span class="card-head-title">Agent health</span>
+          <span class="card-head-action">Manage →</span>
+        </div>
+        <div class="rings-row">
+          <div class="ring-item">
+            <svg width="60" height="60" viewBox="0 0 60 60">
+              <circle cx="30" cy="30" r="24" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="4"/>
+              <circle cx="30" cy="30" r="24" fill="none" stroke="#c8ff00" stroke-width="4"
+                stroke-dasharray="150.8" stroke-dashoffset="15" stroke-linecap="round"
+                transform="rotate(-90 30 30)"/>
+              <text x="30" y="34" text-anchor="middle" font-family="Syne" font-size="11" font-weight="800" fill="#f0f0f0">90%</text>
+            </svg>
+            <div class="ring-label">Strategy</div>
+          </div>
+          <div class="ring-item">
+            <svg width="60" height="60" viewBox="0 0 60 60">
+              <circle cx="30" cy="30" r="24" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="4"/>
+              <circle cx="30" cy="30" r="24" fill="none" stroke="#00ffc2" stroke-width="4"
+                stroke-dasharray="150.8" stroke-dashoffset="6" stroke-linecap="round"
+                transform="rotate(-90 30 30)"/>
+              <text x="30" y="34" text-anchor="middle" font-family="Syne" font-size="11" font-weight="800" fill="#f0f0f0">96%</text>
+            </svg>
+            <div class="ring-label">Engineering</div>
+          </div>
+          <div class="ring-item">
+            <svg width="60" height="60" viewBox="0 0 60 60">
+              <circle cx="30" cy="30" r="24" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="4"/>
+              <circle cx="30" cy="30" r="24" fill="none" stroke="#ff6b35" stroke-width="4"
+                stroke-dasharray="150.8" stroke-dashoffset="27" stroke-linecap="round"
+                transform="rotate(-90 30 30)"/>
+              <text x="30" y="34" text-anchor="middle" font-family="Syne" font-size="11" font-weight="800" fill="#f0f0f0">82%</text>
+            </svg>
+            <div class="ring-label">Growth</div>
+          </div>
+        </div>
+        <div class="mini-stats">
+          <div class="mini-stat">
+            <div>
+              <div class="mini-stat-label">Tasks queued</div>
+              <div class="mini-stat-bar" style="width:120px"><div class="mini-stat-fill" style="width:68%"></div></div>
+            </div>
+            <div class="mini-stat-value">34</div>
+          </div>
+          <div class="mini-stat">
+            <div>
+              <div class="mini-stat-label">PRs merged today</div>
+              <div class="mini-stat-bar" style="width:120px"><div class="mini-stat-fill" style="width:80%;background:var(--accent2)"></div></div>
+            </div>
+            <div class="mini-stat-value">8</div>
+          </div>
+          <div class="mini-stat">
+            <div>
+              <div class="mini-stat-label">Campaigns active</div>
+              <div class="mini-stat-bar" style="width:120px"><div class="mini-stat-fill" style="width:45%;background:var(--accent3)"></div></div>
+            </div>
+            <div class="mini-stat-value">5</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AGENT ROWS + FEED -->
+    <div class="grid-2">
+
+      <!-- AGENTS -->
+      <div class="card">
+        <div class="card-head">
+          <span class="card-head-title">Active agents</span>
+          <span class="card-head-action">Configure →</span>
+        </div>
+        <div class="agent-list">
+          <div class="agent-row">
+            <div class="agent-icon strategy">🧠</div>
+            <div>
+              <div class="agent-name">Strategy Agent</div>
+              <div class="agent-task">Analyzing competitor pricing changes · 3 sources</div>
+            </div>
+            <div class="agent-status running">Running</div>
+            <div class="agent-uptime">7h 42m</div>
+          </div>
+          <div class="agent-row">
+            <div class="agent-icon engineering">⚡</div>
+            <div>
+              <div class="agent-name">Engineering Agent</div>
+              <div class="agent-task">Building feature/notifications-v2 · 4 files changed</div>
+            </div>
+            <div class="agent-status running">Running</div>
+            <div class="agent-uptime">7h 42m</div>
+          </div>
+          <div class="agent-row">
+            <div class="agent-icon growth">📣</div>
+            <div>
+              <div class="agent-name">Growth Agent</div>
+              <div class="agent-task">A/B test variant B winning · reallocating budget</div>
+            </div>
+            <div class="agent-status running">Running</div>
+            <div class="agent-uptime">6h 11m</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ACTIVITY FEED -->
+      <div class="card">
+        <div class="card-head">
+          <span class="card-head-title">Overnight activity</span>
+          <span class="card-head-action">Full log →</span>
+        </div>
+        <div class="card-body">
+          <div class="feed">
+            <div class="feed-item">
+              <div class="feed-dot green"></div>
+              <div class="feed-body">
+                <div class="feed-text"><strong>Engineering</strong> deployed notifications-v1 to production — 0 test failures</div>
+                <div class="feed-time">2 hours ago</div>
+              </div>
+            </div>
+            <div class="feed-item">
+              <div class="feed-dot teal"></div>
+              <div class="feed-body">
+                <div class="feed-text"><strong>Growth</strong> paused underperforming ad set · saved $240 in wasted spend</div>
+                <div class="feed-time">3 hours ago</div>
+              </div>
+            </div>
+            <div class="feed-item">
+              <div class="feed-dot green"></div>
+              <div class="feed-body">
+                <div class="feed-text"><strong>Strategy</strong> updated roadmap — added "team collaboration" as Q3 priority</div>
+                <div class="feed-time">4 hours ago</div>
+              </div>
+            </div>
+            <div class="feed-item">
+              <div class="feed-dot teal"></div>
+              <div class="feed-body">
+                <div class="feed-text"><strong>Engineering</strong> fixed 3 bugs from user feedback batch · auto-closed 3 issues</div>
+                <div class="feed-time">5 hours ago</div>
+              </div>
+            </div>
+            <div class="feed-item">
+              <div class="feed-dot orange"></div>
+              <div class="feed-body">
+                <div class="feed-text"><strong>Growth</strong> published 2 blog posts · SEO score 91/100</div>
+                <div class="feed-time">6 hours ago</div>
+              </div>
+            </div>
+            <div class="feed-item">
+              <div class="feed-dot gray"></div>
+              <div class="feed-body">
+                <div class="feed-text"><strong>Strategy</strong> sent weekly digest to your inbox</div>
+                <div class="feed-time">7 hours ago</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TASK BOARD -->
+    <div class="card" style="margin-bottom:1.5rem">
+      <div class="card-head">
+        <span class="card-head-title">Task board</span>
+        <span class="card-head-action">Open full board →</span>
+      </div>
+      <div class="task-cols">
+        <div class="task-col">
+          <div class="task-col-head">In progress <span>4</span></div>
+          <div class="task-item">
+            Build onboarding email sequence (3 emails)
+            <div class="task-meta"><span class="task-tag growth">Growth</span><span class="task-time">~45m left</span></div>
+          </div>
+          <div class="task-item">
+            Refactor auth middleware for Next.js 15
+            <div class="task-meta"><span class="task-tag eng">Engineering</span><span class="task-time">~1h left</span></div>
+          </div>
+          <div class="task-item">
+            Competitor feature gap analysis
+            <div class="task-meta"><span class="task-tag strategy">Strategy</span><span class="task-time">~20m left</span></div>
+          </div>
+          <div class="task-item">
+            Optimize checkout conversion flow
+            <div class="task-meta"><span class="task-tag growth">Growth</span><span class="task-time">~2h left</span></div>
+          </div>
+        </div>
+        <div class="task-col">
+          <div class="task-col-head">Review needed <span>3</span></div>
+          <div class="task-item">
+            Pricing page A/B test — variant ready to ship
+            <div class="task-meta"><span class="task-tag growth">Growth</span><span class="task-time">Awaiting you</span></div>
+          </div>
+          <div class="task-item">
+            Q3 roadmap draft — 8 priorities ranked
+            <div class="task-meta"><span class="task-tag strategy">Strategy</span><span class="task-time">Awaiting you</span></div>
+          </div>
+          <div class="task-item">
+            Mobile push notifications PR #142
+            <div class="task-meta"><span class="task-tag eng">Engineering</span><span class="task-time">Awaiting you</span></div>
+          </div>
+        </div>
+        <div class="task-col">
+          <div class="task-col-head">Completed today <span>6</span></div>
+          <div class="task-item" style="opacity:0.5">
+            Deploy hotfix for login redirect bug
+            <div class="task-meta"><span class="task-tag eng">Engineering</span><span class="task-time">Done · 4h ago</span></div>
+          </div>
+          <div class="task-item" style="opacity:0.5">
+            Publish 2 SEO blog posts
+            <div class="task-meta"><span class="task-tag growth">Growth</span><span class="task-time">Done · 6h ago</span></div>
+          </div>
+          <div class="task-item" style="opacity:0.5">
+            Weekly competitive intelligence report
+            <div class="task-meta"><span class="task-tag strategy">Strategy</span><span class="task-time">Done · 7h ago</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</main>
+
+<script>
+const API = window.location.origin + '/api';
+const AUTH_API = window.location.origin + '/auth';
+
+// ── AUTH GUARD ──
+(async () => {
+  const token = localStorage.getItem('polsia_token');
+  if (!token) { window.location.href = '/login.html'; return; }
+  try {
+    const res = await fetch(`${AUTH_API}/me`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) { localStorage.clear(); window.location.href = '/login.html'; return; }
+    const { user } = await res.json();
+    document.querySelector('.user-name').textContent = user.name;
+    document.querySelector('.user-plan').textContent = user.plan;
+    document.querySelector('.avatar').textContent = user.avatar;
+    document.querySelector('.topbar-title').textContent = `Good morning, ${user.name.split(' ')[0]}.`;
+  } catch { /* server starting, continue */ }
+})();
+
+// ── LOGOUT on avatar click ──
+document.querySelector('.user-row').addEventListener('click', () => {
+  if (confirm('Sign out of Polsia?')) { localStorage.clear(); window.location.href = '/login.html'; }
+});
+
+// ── FETCH HELPERS ──
+function getToken() { return localStorage.getItem('polsia_token') || ''; }
+
+async function apiFetch(path) {
+  try {
+    const r = await fetch(API + path, { headers: { Authorization: `Bearer ${getToken()}` } });
+    if (r.status === 401) { window.location.href = '/login.html'; return null; }
+    return r.ok ? r.json() : null;
+  } catch { return null; }
+}
+
+// ── LIVE CLOCK ──
+function updateTime(agentCount) {
+  const now = new Date();
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const el = document.querySelector('.topbar-sub');
+  const running = agentCount !== undefined ? `${agentCount} agent${agentCount!==1?'s':''} running` : 'loading...';
+  if (el) el.textContent = `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()} · ${now.toLocaleTimeString()} · ${running}`;
+}
+setInterval(() => updateTime(), 1000);
+updateTime();
+
+// ── LOAD KPIs ──
+async function loadKpis() {
+  const kpi = await apiFetch('/kpis');
+  if (!kpi) return;
+  const els = document.querySelectorAll('.kpi');
+  if (els[0]) els[0].querySelector('.kpi-value').textContent = '$' + Number(kpi.mrr).toLocaleString();
+  if (els[1]) els[1].querySelector('.kpi-value').textContent = Number(kpi.tasks_completed).toLocaleString();
+  if (els[2]) els[2].querySelector('.kpi-value').textContent = Number(kpi.active_users).toLocaleString();
+  if (els[3]) els[3].querySelector('.kpi-value').textContent = kpi.deploys_today;
+}
+
+// ── LOAD AGENTS ──
+async function loadAgents() {
+  const agents = await apiFetch('/agents');
+  if (!agents || !agents.length) return;
+
+  // Update status pill
+  const running = agents.filter(a => a.status === 'running').length;
+  updateTime(running);
+  document.querySelector('.status-pill').innerHTML =
+    `<div class="pulse"></div> ${running} agent${running!==1?'s':''} running`;
+
+  // Update agent rows
+  const rows = document.querySelectorAll('.agent-row');
+  agents.forEach((agent, i) => {
+    if (!rows[i]) return;
+    rows[i].querySelector('.agent-name').textContent = agent.name;
+    rows[i].querySelector('.agent-task').textContent = agent.current_task || '—';
+    const badge = rows[i].querySelector('.agent-status');
+    badge.textContent = agent.status;
+    badge.className = `agent-status ${agent.status === 'running' ? 'running' : agent.status === 'error' ? 'error' : 'idle'}`;
+    const mins = agent.uptime_minutes;
+    rows[i].querySelector('.agent-uptime').textContent = `${Math.floor(mins/60)}h ${mins%60}m`;
+  });
+
+  // Update rings
+  const rings = document.querySelectorAll('.ring-item');
+  const circumference = 150.8;
+  agents.forEach((agent, i) => {
+    if (!rings[i]) return;
+    const pct = agent.efficiency / 100;
+    const offset = circumference * (1 - pct);
+    const circle = rings[i].querySelector('circle:nth-child(2)');
+    const label = rings[i].querySelector('text');
+    if (circle) circle.setAttribute('stroke-dashoffset', offset);
+    if (label) label.textContent = agent.efficiency + '%';
+    rings[i].querySelector('.ring-label').textContent = agent.type.charAt(0).toUpperCase() + agent.type.slice(1);
+  });
+
+  return agents;
+}
+
+// ── LOAD TASKS ──
+async function loadTasks() {
+  const tasks = await apiFetch('/tasks');
+  if (!tasks) return;
+
+  const cols = { in_progress: [], review: [], done: [] };
+  tasks.forEach(t => { if (cols[t.status]) cols[t.status].push(t); });
+
+  const taskCols = document.querySelectorAll('.task-col');
+  const colKeys = ['in_progress', 'review', 'done'];
+  const colTitles = ['In progress', 'Review needed', 'Completed today'];
+
+  taskCols.forEach((col, ci) => {
+    const key = colKeys[ci];
+    const items = cols[key] || [];
+    col.querySelector('.task-col-head span').textContent = items.length;
+    // Remove existing task items
+    col.querySelectorAll('.task-item').forEach(el => el.remove());
+    items.forEach(task => {
+      const div = document.createElement('div');
+      div.className = 'task-item';
+      if (task.status === 'done') div.style.opacity = '0.5';
+      div.innerHTML = `${task.title}
+        <div class="task-meta">
+          <span class="task-tag ${task.agent_type}">${task.agent_type}</span>
+          <span class="task-time">${task.eta || (task.status === 'done' ? 'Done' : '')}</span>
+        </div>`;
+      // Click to advance status
+      if (task.status !== 'done') {
+        div.style.cursor = 'pointer';
+        div.title = 'Click to advance status';
+        div.addEventListener('click', async () => {
+          const next = task.status === 'in_progress' ? 'review' : 'done';
+          await fetch(`${API}/tasks/${task.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+            body: JSON.stringify({ status: next })
+          });
+          loadAll();
+        });
+      }
+      col.appendChild(div);
+    });
+  });
+}
+
+// ── LOAD ACTIVITY ──
+async function loadActivity() {
+  const feed = await apiFetch('/activity');
+  if (!feed) return;
+
+  const feedEl = document.querySelector('.feed');
+  if (!feedEl) return;
+  feedEl.innerHTML = '';
+
+  const dotColor = { Engineering: 'teal', Strategy: 'green', Growth: 'orange' };
+
+  feed.slice(0, 6).forEach(item => {
+    const color = dotColor[item.agent] || 'gray';
+    const ago = timeAgo(item.created_at);
+    const div = document.createElement('div');
+    div.className = 'feed-item';
+    div.innerHTML = `
+      <div class="feed-dot ${color}"></div>
+      <div class="feed-body">
+        <div class="feed-text"><strong>${item.agent}</strong> ${item.message}</div>
+        <div class="feed-time">${ago}</div>
+      </div>`;
+    feedEl.appendChild(div);
+  });
+}
+
+function timeAgo(dateStr) {
+  const diff = (Date.now() - new Date(dateStr + 'Z').getTime()) / 1000;
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+  return Math.floor(diff/86400) + 'd ago';
+}
+
+// ── LOAD REVENUE CHART ──
+async function loadChart() {
+  const revenue = await apiFetch('/revenue');
+  if (!revenue || !revenue.length) return;
+
+  const rawData = revenue.map(r => r.amount);
+  const labels = revenue.map(r => {
+    const d = new Date(r.date);
+    return (d.getMonth()+1) + '/' + d.getDate();
+  });
+
+  const W = 600, H = 120, pad = 10;
+  const min = Math.min(...rawData) * 0.97;
+  const max = Math.max(...rawData) * 1.02;
+  const pts = rawData.map((v, i) => {
+    const x = (i / (rawData.length - 1)) * W;
+    const y = H - pad - ((v - min) / (max - min)) * (H - pad * 2);
+    return [x, y];
+  });
+
+  const lineD = pts.map((p, i) => (i===0 ? `M${p[0]},${p[1]}` : `L${p[0]},${p[1]}`)).join(' ');
+  const areaD = lineD + ` L${W},${H} L0,${H} Z`;
+
+  document.getElementById('sparkArea').setAttribute('d', areaD);
+  document.getElementById('sparkLine').setAttribute('d', lineD);
+
+  const dotsG = document.getElementById('sparkDots');
+  const tooltip = document.getElementById('tooltip');
+  dotsG.innerHTML = '';
+
+  pts.forEach(([x, y], i) => {
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', x); circle.setAttribute('cy', y);
+    circle.setAttribute('r', i === rawData.length-1 ? 4 : 2.5);
+    circle.setAttribute('fill', '#c8ff00');
+    circle.style.transition = 'r 0.15s';
+    circle.addEventListener('mouseenter', () => {
+      circle.setAttribute('r', 5);
+      tooltip.style.opacity = '1';
+      tooltip.style.left = (x/W*100) + '%';
+      tooltip.style.top = (y-36) + 'px';
+      tooltip.textContent = '$' + rawData[i].toLocaleString() + ' · ' + labels[i];
+    });
+    circle.addEventListener('mouseleave', () => {
+      circle.setAttribute('r', i === rawData.length-1 ? 4 : 2.5);
+      tooltip.style.opacity = '0';
+    });
+    dotsG.appendChild(circle);
+  });
+
+  const labelsEl = document.getElementById('chartLabels');
+  labelsEl.innerHTML = '';
+  rawData.forEach((_, i) => {
+    const span = document.createElement('span');
+    span.textContent = i % 7 === 0 ? labels[i] : '';
+    labelsEl.appendChild(span);
+  });
+}
+
+// ── LOAD ALL ──
+async function loadAll() {
+  await Promise.all([loadKpis(), loadAgents(), loadTasks(), loadActivity(), loadChart()]);
+}
+
+loadAll();
+// Refresh every 30 seconds
+setInterval(loadAll, 30000);
+
+// ── SIDEBAR NAV ──
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    item.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Polsia — Strategy Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet"/>
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-WQGSDG87MT"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-WQGSDG87MT');
+</script>
+<style>
+:root {
+  --bg:#080808;--surface:#0f0f0f;--card:#111;--card2:#141414;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --accent:#c8ff00;--accent2:#00ffc2;--accent3:#ff6b35;
+  --text:#f0f0f0;--muted:#555;--muted2:#888;--error:#ff5555;
+  --fd:'Syne',sans-serif;--fm:'DM Mono',monospace;--sidebar:220px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{background:var(--bg);color:var(--text);font-family:var(--fm);font-weight:300;font-size:13px;display:flex;overflow:hidden;}
+
+.sidebar{width:var(--sidebar);flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;position:fixed;left:0;top:0;}
+.sidebar-logo{padding:1.5rem 1.4rem;border-bottom:1px solid var(--border);font-family:var(--fd);font-size:1.15rem;font-weight:800;letter-spacing:-0.02em;}
+.sidebar-logo span{color:var(--accent);}
+.sidebar-section{padding:1.2rem 1rem 0.4rem;font-size:0.55rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);}
+.nav-item{display:flex;align-items:center;gap:0.7rem;padding:0.55rem 1rem;margin:0 0.4rem;border-radius:4px;color:var(--muted2);font-size:0.75rem;cursor:pointer;transition:background 0.15s,color 0.15s;text-decoration:none;}
+.nav-item:hover{background:rgba(255,255,255,0.04);color:var(--text);}
+.nav-item.active{background:rgba(200,255,0,0.08);color:var(--accent);}
+.sidebar-bottom{margin-top:auto;border-top:1px solid var(--border);padding:1rem;}
+.user-row{display:flex;align-items:center;gap:0.75rem;padding:0.5rem;border-radius:4px;cursor:pointer;}
+.avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;color:#000;flex-shrink:0;}
+.user-name{font-size:0.72rem;color:var(--text);}
+.user-plan{font-size:0.6rem;color:var(--muted2);}
+
+.main{margin-left:var(--sidebar);flex:1;height:100vh;overflow-y:auto;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:1.2rem 2rem;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:40;}
+.topbar-title{font-family:var(--fd);font-size:1.1rem;font-weight:700;letter-spacing:-0.01em;}
+.topbar-sub{font-size:0.65rem;color:var(--muted2);margin-top:2px;}
+
+.content{padding:2rem;max-width:900px;}
+
+/* TABS */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:2rem;}
+.tab{padding:0.8rem 1.5rem;font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color 0.2s,border-color 0.2s;}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+/* ONBOARDING FORM */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;}
+.field{display:flex;flex-direction:column;gap:0.4rem;}
+.field.full{grid-column:1/-1;}
+.field label{font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted2);}
+.field input,.field textarea,.field select{background:var(--card2);border:1px solid var(--border);color:var(--text);font-family:var(--fm);font-size:0.82rem;padding:0.7rem 0.9rem;outline:none;transition:border-color 0.2s;width:100%;resize:vertical;}
+.field input:focus,.field textarea:focus{border-color:var(--accent);}
+.field input::placeholder,.field textarea::placeholder{color:var(--muted);}
+.field-hint{font-size:0.6rem;color:var(--muted);}
+.save-btn{background:var(--accent);color:#000;border:none;padding:0.85rem 2rem;font-family:var(--fm);font-size:0.78rem;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;transition:opacity 0.2s;margin-top:0.5rem;}
+.save-btn:hover:not(:disabled){opacity:0.85;}
+.save-btn:disabled{opacity:0.5;cursor:not-allowed;}
+
+/* RUN AGENT */
+.run-section{background:var(--card);border:1px solid var(--border);padding:2rem;margin-bottom:2rem;}
+.run-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;}
+.run-title{font-family:var(--fd);font-size:1.1rem;font-weight:700;}
+.run-desc{font-size:0.78rem;color:var(--muted2);line-height:1.7;margin-bottom:1.5rem;max-width:600px;}
+.run-btn{background:var(--accent);color:#000;border:none;padding:0.9rem 2rem;font-family:var(--fm);font-size:0.78rem;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;transition:opacity 0.2s;display:flex;align-items:center;gap:0.7rem;}
+.run-btn:hover:not(:disabled){opacity:0.85;}
+.run-btn:disabled{opacity:0.5;cursor:not-allowed;}
+.run-status{margin-top:1.2rem;padding:1rem;background:var(--card2);border:1px solid var(--border);font-size:0.75rem;display:none;}
+.run-status.show{display:block;}
+.run-status.running{border-color:rgba(200,255,0,0.2);color:var(--accent);}
+.run-status.complete{border-color:rgba(0,255,194,0.2);color:var(--accent2);}
+.run-status.error{border-color:rgba(255,85,85,0.2);color:var(--error);}
+
+/* SPINNER */
+.spin{width:14px;height:14px;border:2px solid rgba(0,0,0,0.3);border-top-color:#000;border-radius:50%;animation:spin 0.7s linear infinite;display:none;}
+.run-btn.loading .spin{display:block;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ROADMAP */
+.roadmap-empty{text-align:center;padding:4rem 2rem;color:var(--muted2);font-size:0.82rem;line-height:2;}
+.roadmap-meta{font-size:0.65rem;color:var(--muted2);margin-bottom:1.5rem;display:flex;align-items:center;gap:1rem;}
+.roadmap-meta span{color:var(--accent);}
+.roadmap-list{display:flex;flex-direction:column;gap:1px;background:var(--border);border:1px solid var(--border);}
+.roadmap-item{background:var(--card);padding:1.6rem;transition:background 0.15s;position:relative;overflow:hidden;}
+.roadmap-item:hover{background:var(--card2);}
+.roadmap-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);opacity:0;transition:opacity 0.2s;}
+.roadmap-item:hover::before{opacity:1;}
+.item-header{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:0.6rem;}
+.item-title{font-family:var(--fd);font-size:1rem;font-weight:700;letter-spacing:-0.01em;flex:1;}
+.item-meta{display:flex;gap:0.6rem;align-items:center;flex-shrink:0;}
+.item-priority{font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.2rem 0.6rem;background:rgba(200,255,0,0.1);color:var(--accent);}
+.item-quarter{font-size:0.6rem;letter-spacing:0.1em;color:var(--muted2);}
+.item-desc{font-size:0.78rem;color:var(--muted2);line-height:1.75;margin-bottom:0.8rem;}
+.item-reasoning{font-size:0.7rem;color:var(--muted);border-left:2px solid var(--border2);padding-left:0.8rem;font-style:italic;line-height:1.6;}
+
+/* HISTORY */
+.run-history{margin-top:2rem;}
+.run-history-title{font-family:var(--fd);font-size:0.85rem;font-weight:700;margin-bottom:1rem;}
+.run-row{display:flex;align-items:center;gap:1rem;padding:0.75rem 1rem;border-bottom:1px solid var(--border);font-size:0.72rem;background:var(--card);}
+.run-row:last-child{border-bottom:none;}
+.run-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.run-dot.complete{background:var(--accent);}
+.run-dot.running{background:var(--accent2);animation:pulse 1.5s ease-in-out infinite;}
+.run-dot.error{background:var(--error);}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+.run-agent{color:var(--text);}
+.run-time{color:var(--muted);margin-left:auto;}
+.run-result{color:var(--muted2);}
+
+.main::-webkit-scrollbar{width:3px;}
+.main::-webkit-scrollbar-thumb{background:var(--border2);}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">Pol<span>sia</span></div>
+  <div class="sidebar-section">Overview</div>
+  <a class="nav-item" href="dashboard.html">◈ Dashboard</a>
+  <a class="nav-item active" href="strategy.html">◎ Agents</a>
+  <a class="nav-item" href="dashboard.html">⊞ Tasks</a>
+  <div class="sidebar-section">Settings</div>
+  <a class="nav-item" href="admin.html">⊹ Admin</a>
+  <div class="sidebar-bottom">
+    <div class="user-row">
+      <div class="avatar" id="avatarEl">JD</div>
+      <div>
+        <div class="user-name" id="userName">Loading...</div>
+        <div class="user-plan" id="userPlan"></div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">Strategy Agent</div>
+      <div class="topbar-sub" id="topSub">Configure your company, then run the agent to get a real AI roadmap</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('setup')">Company Setup</div>
+      <div class="tab" onclick="switchTab('roadmap')">Roadmap</div>
+      <div class="tab" onclick="switchTab('history')">Run History</div>
+    </div>
+
+    <!-- SETUP TAB -->
+    <div id="setupTab">
+      <div class="run-section">
+        <div class="run-header">
+          <div class="run-title">🧠 Strategy Agent</div>
+        </div>
+        <div class="run-desc">
+          Fill in your company details below, save them, then click <strong>Run Strategy Analysis</strong>. The agent will analyze your market, study your competitors, and generate a prioritized 6-item roadmap tailored to your specific product and goals — powered by Claude AI.
+        </div>
+        <button class="run-btn" id="runBtn" onclick="runAgent()">
+          <div class="spin"></div>
+          ✦ Run Strategy Analysis
+        </button>
+        <div class="run-status" id="runStatus"></div>
+      </div>
+
+      <div class="form-grid" id="onboardingForm">
+        <div class="field">
+          <label>Company name</label>
+          <input type="text" id="company_name" placeholder="e.g. Polsia"/>
+        </div>
+        <div class="field">
+          <label>GitHub repo (optional)</label>
+          <input type="text" id="github_repo" placeholder="e.g. fpsvic/polsia-hq"/>
+        </div>
+        <div class="field full">
+          <label>What does your product do?</label>
+          <textarea id="product_desc" rows="3" placeholder="Describe your product clearly — what problem it solves and for whom..."></textarea>
+        </div>
+        <div class="field">
+          <label>Target market</label>
+          <input type="text" id="target_market" placeholder="e.g. Early-stage SaaS founders"/>
+        </div>
+        <div class="field">
+          <label>Main competitors</label>
+          <input type="text" id="competitors" placeholder="e.g. Notion AI, Cursor, Devin"/>
+        </div>
+        <div class="field full">
+          <label>Primary goals (next 6 months)</label>
+          <textarea id="goals" rows="2" placeholder="e.g. Reach $10k MRR, launch paid tier, get 100 active users..."></textarea>
+        </div>
+        <div class="field">
+          <label>Tech stack</label>
+          <input type="text" id="stack" placeholder="e.g. Node.js, SQLite, Render"/>
+        </div>
+        <div class="field" style="align-self:end">
+          <button class="save-btn" onclick="saveOnboarding()">Save company info →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROADMAP TAB -->
+    <div id="roadmapTab" style="display:none">
+      <div id="roadmapContent">
+        <div class="roadmap-empty">
+          No roadmap yet.<br/>
+          Go to <strong>Company Setup</strong>, fill in your details, and click <strong>Run Strategy Analysis</strong>.
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORY TAB -->
+    <div id="historyTab" style="display:none">
+      <div class="run-history">
+        <div class="run-history-title">Agent run history</div>
+        <div id="historyList" style="background:var(--card);border:1px solid var(--border)">
+          <div style="padding:2rem;color:var(--muted2);font-size:0.78rem">No runs yet.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+const API = window.location.origin + '/api';
+const AGENT_API = window.location.origin + '/agent';
+const AUTH_API = window.location.origin + '/auth';
+const token = localStorage.getItem('polsia_token');
+if (!token) window.location.href = '/login.html';
+
+function h(url, opts = {}) {
+  return fetch(url, { ...opts, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...(opts.headers||{}) }});
+}
+
+// ── AUTH ──
+(async () => {
+  const r = await h(`${AUTH_API}/me`);
+  if (!r.ok) { localStorage.clear(); window.location.href = '/login.html'; return; }
+  const { user } = await r.json();
+  document.getElementById('avatarEl').textContent = user.avatar;
+  document.getElementById('userName').textContent = user.name;
+  document.getElementById('userPlan').textContent = user.plan;
+})();
+
+// ── TABS ──
+function switchTab(name) {
+  ['setup','roadmap','history'].forEach(t => {
+    document.getElementById(t+'Tab').style.display = t === name ? 'block' : 'none';
+    document.querySelectorAll('.tab')[['setup','roadmap','history'].indexOf(t)].classList.toggle('active', t === name);
+  });
+  if (name === 'roadmap') loadRoadmap();
+  if (name === 'history') loadHistory();
+}
+
+// ── LOAD ONBOARDING ──
+async function loadOnboarding() {
+  const r = await h(`${AGENT_API}/onboarding`);
+  if (!r.ok) return;
+  const data = await r.json();
+  if (!data) return;
+  const fields = ['company_name','product_desc','target_market','competitors','goals','stack','github_repo'];
+  fields.forEach(f => { const el = document.getElementById(f); if (el && data[f]) el.value = data[f]; });
+  if (data.company_name) {
+    document.getElementById('topSub').textContent = `Analyzing: ${data.company_name} · Ready to run`;
+  }
+}
+
+// ── SAVE ONBOARDING ──
+async function saveOnboarding() {
+  const body = {};
+  ['company_name','product_desc','target_market','competitors','goals','stack','github_repo'].forEach(f => {
+    body[f] = document.getElementById(f)?.value?.trim() || '';
+  });
+  if (!body.company_name || !body.product_desc) {
+    return alert('Company name and product description are required.');
+  }
+  const r = await h(`${AGENT_API}/onboarding`, { method: 'POST', body: JSON.stringify(body) });
+  if (r.ok) {
+    document.getElementById('topSub').textContent = `Saved: ${body.company_name} · Ready to run`;
+    showStatus('Company info saved ✓ — click Run Strategy Analysis to generate your roadmap.', 'complete');
+  }
+}
+
+// ── RUN AGENT ──
+async function runAgent() {
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  btn.classList.add('loading');
+  btn.querySelector('.spin').style.display = 'block';
+  showStatus('🧠 Strategy Agent is analyzing your market and generating your roadmap... This takes 15-30 seconds.', 'running');
+
+  try {
+    const r = await h(`${AGENT_API}/strategy/run`, { method: 'POST' });
+    const data = await r.json();
+    if (!r.ok) {
+      showStatus('✗ ' + (data.error || 'Run failed'), 'error');
+      return;
+    }
+    // Poll for completion
+    pollRun(data.run_id);
+  } catch (e) {
+    showStatus('✗ Could not connect to server', 'error');
+    btn.disabled = false;
+    btn.classList.remove('loading');
+  }
+}
+
+async function pollRun(runId) {
+  const interval = setInterval(async () => {
+    try {
+      const r = await h(`${AGENT_API}/runs`);
+      const runs = await r.json();
+      const run = runs.find(r => r.id === runId);
+      if (!run) return;
+
+      if (run.status === 'complete') {
+        clearInterval(interval);
+        showStatus('✦ Roadmap generated successfully! Switch to the Roadmap tab to see your priorities.', 'complete');
+        document.getElementById('runBtn').disabled = false;
+        document.getElementById('runBtn').classList.remove('loading');
+      } else if (run.status === 'error') {
+        clearInterval(interval);
+        const result = run.result ? JSON.parse(run.result) : {};
+        showStatus('✗ Run failed: ' + (result.error || 'Unknown error'), 'error');
+        document.getElementById('runBtn').disabled = false;
+        document.getElementById('runBtn').classList.remove('loading');
+      }
+    } catch {}
+  }, 3000);
+
+  // Timeout after 2 minutes
+  setTimeout(() => {
+    clearInterval(interval);
+    document.getElementById('runBtn').disabled = false;
+    document.getElementById('runBtn').classList.remove('loading');
+  }, 120000);
+}
+
+function showStatus(msg, type) {
+  const el = document.getElementById('runStatus');
+  el.textContent = msg;
+  el.className = `run-status show ${type}`;
+}
+
+// ── LOAD ROADMAP ──
+async function loadRoadmap() {
+  const r = await h(`${AGENT_API}/roadmap`);
+  const items = await r.json();
+  const el = document.getElementById('roadmapContent');
+
+  if (!items.length) {
+    el.innerHTML = `<div class="roadmap-empty">No roadmap yet.<br/>Go to <strong>Company Setup</strong>, fill in your details, and click <strong>Run Strategy Analysis</strong>.</div>`;
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="roadmap-meta">
+      <span>${items.length} priorities</span> generated by Strategy Agent ·
+      Last updated: ${timeAgo(items[0].created_at)}
+    </div>
+    <div class="roadmap-list">
+      ${items.map(item => `
+        <div class="roadmap-item">
+          <div class="item-header">
+            <div class="item-title">${item.title}</div>
+            <div class="item-meta">
+              <span class="item-priority">P${item.priority}</span>
+              <span class="item-quarter">${item.quarter}</span>
+            </div>
+          </div>
+          <div class="item-desc">${item.description}</div>
+          ${item.agent_reasoning ? `<div class="item-reasoning">${item.agent_reasoning}</div>` : ''}
+        </div>
+      `).join('')}
+    </div>`;
+}
+
+// ── LOAD HISTORY ──
+async function loadHistory() {
+  const r = await h(`${AGENT_API}/runs`);
+  const runs = await r.json();
+  const el = document.getElementById('historyList');
+  if (!runs.length) {
+    el.innerHTML = `<div style="padding:2rem;color:var(--muted2);font-size:0.78rem">No runs yet.</div>`;
+    return;
+  }
+  el.innerHTML = runs.map(run => `
+    <div class="run-row">
+      <div class="run-dot ${run.status}"></div>
+      <div class="run-agent">${run.agent.charAt(0).toUpperCase()+run.agent.slice(1)} Agent</div>
+      <div class="run-result">${run.status === 'complete' ? '✓ Completed' : run.status === 'error' ? '✗ Failed' : '⟳ Running'}</div>
+      <div class="run-time">${timeAgo(run.started_at)}</div>
+    </div>
+  `).join('');
+}
+
+function timeAgo(dateStr) {
+  const diff = (Date.now() - new Date(dateStr+'Z').getTime()) / 1000;
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return Math.floor(diff/60)+'m ago';
+  if (diff < 86400) return Math.floor(diff/3600)+'h ago';
+  return Math.floor(diff/86400)+'d ago';
+}
+
+loadOnboarding();
+</script>
+</body>
+</html>
