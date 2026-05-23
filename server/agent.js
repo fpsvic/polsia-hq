@@ -179,47 +179,61 @@ router.get('/runs', async (req, res) => {
 
 // ── POST /agent/engineering/run ──
 router.post('/engineering/run', async (req, res) => {
-  const db = await getDb();
+  try {
+    const db = await getDb();
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return res.status(400).json({ error: 'ANTHROPIC_API_KEY not set in environment variables' });
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return res.status(400).json({ error: 'ANTHROPIC_API_KEY not set in environment variables' });
+    }
+    if (!process.env.GITHUB_TOKEN || !process.env.GITHUB_REPO) {
+      return res.status(400).json({ error: 'GITHUB_TOKEN and GITHUB_REPO must be set to run the Engineering Agent' });
+    }
+
+    // Ensure required tables exist
+    db.run(`CREATE TABLE IF NOT EXISTS agent_runs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      agent TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'running',
+      result TEXT,
+      started_at TEXT NOT NULL,
+      completed_at TEXT
+    )`);
+    db.run(`CREATE TABLE IF NOT EXISTS engineering_analysis (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT NOT NULL,
+      type TEXT NOT NULL DEFAULT 'task',
+      priority INTEGER NOT NULL DEFAULT 1,
+      effort TEXT NOT NULL DEFAULT 'medium',
+      reasoning TEXT,
+      status TEXT DEFAULT 'open',
+      created_at TEXT NOT NULL
+    )`);
+
+    // Load onboarding for context (optional)
+    const ob = db.exec('SELECT * FROM onboarding WHERE user_id = ?', [req.user.id]);
+    const onboarding = (ob.length && ob[0].values.length)
+      ? Object.fromEntries(ob[0].columns.map((c, i) => [c, ob[0].values[0][i]]))
+      : null;
+
+    // Create run record
+    db.run(`INSERT INTO agent_runs (user_id,agent,status,started_at) VALUES (?,?,?,datetime('now'))`,
+      [req.user.id, 'engineering', 'running']);
+    const runId = db.exec('SELECT last_insert_rowid() as id')[0].values[0][0];
+
+    db.run(`UPDATE agents SET status='running', current_task='Fetching repo data from GitHub...' WHERE type='engineering'`);
+    db.run(`INSERT INTO activity (agent,message,type,created_at) VALUES (?,?,?,datetime('now'))`,
+      ['Engineering', `Starting repo analysis for ${process.env.GITHUB_REPO}`, 'info']);
+    saveDb();
+
+    res.json({ ok: true, run_id: runId });
+
+    runEngineeringAgent(db, req.user.id, runId, onboarding).catch(console.error);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
-  if (!process.env.GITHUB_TOKEN || !process.env.GITHUB_REPO) {
-    return res.status(400).json({ error: 'GITHUB_TOKEN and GITHUB_REPO must be set to run the Engineering Agent' });
-  }
-
-  // Ensure engineering_analysis table exists
-  db.run(`CREATE TABLE IF NOT EXISTS engineering_analysis (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    title TEXT NOT NULL,
-    description TEXT NOT NULL,
-    type TEXT NOT NULL DEFAULT 'task',
-    priority INTEGER NOT NULL DEFAULT 1,
-    effort TEXT NOT NULL DEFAULT 'medium',
-    reasoning TEXT,
-    status TEXT DEFAULT 'open',
-    created_at TEXT NOT NULL
-  )`);
-
-  // Load onboarding for context (optional)
-  const ob = db.exec('SELECT * FROM onboarding WHERE user_id = ?', [req.user.id]);
-  const onboarding = (ob.length && ob[0].values.length)
-    ? Object.fromEntries(ob[0].columns.map((c, i) => [c, ob[0].values[0][i]]))
-    : null;
-
-  // Create run record
-  db.run(`INSERT INTO agent_runs (user_id,agent,status,started_at) VALUES (?,?,?,datetime('now'))`,
-    [req.user.id, 'engineering', 'running']);
-  const runId = db.exec('SELECT last_insert_rowid() as id')[0].values[0][0];
-
-  db.run(`UPDATE agents SET status='running', current_task='Fetching repo data from GitHub...' WHERE type='engineering'`);
-  db.run(`INSERT INTO activity (agent,message,type,created_at) VALUES ('Engineering','Starting repo analysis for ${process.env.GITHUB_REPO}','info',datetime('now'))`);
-  saveDb();
-
-  res.json({ ok: true, run_id: runId });
-
-  runEngineeringAgent(db, req.user.id, runId, onboarding).catch(console.error);
 });
 
 async function githubGet(path) {
@@ -331,8 +345,8 @@ Priority 1 = most urgent. Effort: small = <2h, medium = half-day, large = 1-2 da
     // Insert new analysis items
     items.forEach(item => {
       db.run(`INSERT INTO engineering_analysis (user_id,title,description,type,priority,effort,reasoning,status,created_at)
-        VALUES (?,?,?,?,?,?,'open',?,datetime('now'))`,
-        [userId, item.title, item.description, item.type, item.priority, item.effort, item.reasoning]);
+        VALUES (?,?,?,?,?,?,?,?,datetime('now'))`,
+        [userId, item.title, item.description, item.type, item.priority, item.effort, item.reasoning, 'open']);
     });
 
     // Add top 2 as tasks in the main task board
@@ -343,19 +357,20 @@ Priority 1 = most urgent. Effort: small = <2h, medium = half-day, large = 1-2 da
     });
 
     db.run(`UPDATE kpis SET tasks_completed = tasks_completed + 1 WHERE id = (SELECT MAX(id) FROM kpis)`);
-    db.run(`INSERT INTO activity (agent,message,type,created_at)
-      VALUES ('Engineering','Repo analysis complete — ${items.length} engineering priorities identified for ${repoData.full_name}','success',datetime('now'))`);
+    db.run(`INSERT INTO activity (agent,message,type,created_at) VALUES (?,?,?,datetime('now'))`,
+      ['Engineering', `Repo analysis complete — ${items.length} priorities identified for ${repoData.full_name}`, 'success']);
     db.run(`UPDATE agent_runs SET status='complete', result=?, completed_at=datetime('now') WHERE id=?`,
       [JSON.stringify({ items_generated: items.length, repo: repoData.full_name }), runId]);
-    db.run(`UPDATE agents SET status='idle', current_task='Analysis complete — ${items.length} priorities ready' WHERE type='engineering'`);
+    db.run(`UPDATE agents SET status='idle', current_task=? WHERE type='engineering'`,
+      [`Analysis complete — ${items.length} priorities ready`]);
 
     saveDb();
   } catch (err) {
     db.run(`UPDATE agent_runs SET status='error', result=?, completed_at=datetime('now') WHERE id=?`,
       [JSON.stringify({ error: err.message }), runId]);
     db.run(`UPDATE agents SET status='idle', current_task='Last run failed — check logs' WHERE type='engineering'`);
-    db.run(`INSERT INTO activity (agent,message,type,created_at)
-      VALUES ('Engineering','Engineering run failed: ${err.message.slice(0, 80)}','error',datetime('now'))`);
+    db.run(`INSERT INTO activity (agent,message,type,created_at) VALUES (?,?,?,datetime('now'))`,
+      ['Engineering', `Engineering run failed: ${err.message.slice(0, 80)}`, 'error']);
     saveDb();
   }
 }
