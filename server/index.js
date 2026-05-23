@@ -10,8 +10,8 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Auth middleware for /api routes
-app.use('/api', (req, res, next) => {
+// Auth middleware for /api and /integrations routes
+const authMiddleware = (req, res, next) => {
   const auth = req.headers.authorization;
   if (!auth || !auth.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Authentication required' });
@@ -22,11 +22,15 @@ app.use('/api', (req, res, next) => {
   } catch {
     res.status(401).json({ error: 'Invalid or expired token' });
   }
-});
+};
+
+app.use('/api', authMiddleware);
+app.use('/integrations', authMiddleware);
 
 // Routes
 app.use('/auth', require('./auth'));
 app.use('/api', require('./routes'));
+app.use('/integrations', require('./integrations'));
 
 // Serve static files
 app.use(express.static(path.join(__dirname, '../public')));
